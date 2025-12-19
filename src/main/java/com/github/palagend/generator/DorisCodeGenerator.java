@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.generator.FastAutoGenerator;
 import com.baomidou.mybatisplus.generator.config.DataSourceConfig;
-import com.baomidou.mybatisplus.generator.config.TemplateType;
 import com.baomidou.mybatisplus.generator.config.rules.DateType;
 import lombok.Getter;
 import org.apache.commons.cli.*;
@@ -150,6 +149,86 @@ public class DorisCodeGenerator {
                 .desc("表前缀")
                 .build());
 
+        // 全局配置
+        options.addOption(Option.builder("od")
+                .longOpt("open-dir")
+                .hasArg()
+                .argName("BOOL")
+                .desc("是否打开输出目录（true/false）")
+                .build());
+
+        options.addOption(Option.builder("dt")
+                .longOpt("date-type")
+                .hasArg()
+                .argName("TYPE")
+                .desc("日期类型（ONLY_DATE, SQL_PACK, TIME_PACK）")
+                .build());
+
+        // 包配置
+        options.addOption(Option.builder("ep")
+                .longOpt("entity-package")
+                .hasArg()
+                .argName("PACKAGE")
+                .desc("实体类包名")
+                .build());
+
+        options.addOption(Option.builder("sp")
+                .longOpt("service-package")
+                .hasArg()
+                .argName("PACKAGE")
+                .desc("服务类包名")
+                .build());
+
+        options.addOption(Option.builder("sip")
+                .longOpt("service-impl-package")
+                .hasArg()
+                .argName("PACKAGE")
+                .desc("服务实现类包名")
+                .build());
+
+        options.addOption(Option.builder("mp")
+                .longOpt("mapper-package")
+                .hasArg()
+                .argName("PACKAGE")
+                .desc("映射器包名")
+                .build());
+
+        options.addOption(Option.builder("cp")
+                .longOpt("controller-package")
+                .hasArg()
+                .argName("PACKAGE")
+                .desc("控制器包名")
+                .build());
+
+        // 策略配置
+        options.addOption(Option.builder("fo")
+                .longOpt("file-override")
+                .hasArg()
+                .argName("BOOL")
+                .desc("是否覆盖已有文件（true/false）")
+                .build());
+
+        options.addOption(Option.builder("lombok")
+                .longOpt("lombok")
+                .hasArg()
+                .argName("BOOL")
+                .desc("是否启用Lombok（true/false）")
+                .build());
+
+        options.addOption(Option.builder("brm")
+                .longOpt("base-result-map")
+                .hasArg()
+                .argName("BOOL")
+                .desc("是否启用BaseResultMap（true/false）")
+                .build());
+
+        options.addOption(Option.builder("bcl")
+                .longOpt("base-column-list")
+                .hasArg()
+                .argName("BOOL")
+                .desc("是否启用BaseColumnList（true/false）")
+                .build());
+
         // 模块控制
         options.addOption(Option.builder("s")
                 .longOpt("service")
@@ -268,6 +347,25 @@ public class DorisCodeGenerator {
         if (cmd.hasOption("package")) commandArgs.put("parentPackage", cmd.getOptionValue("package"));
         if (cmd.hasOption("tables")) commandArgs.put("includeTables", cmd.getOptionValue("tables"));
         if (cmd.hasOption("prefix")) commandArgs.put("tablePrefix", cmd.getOptionValue("prefix"));
+        
+        // 全局配置
+        if (cmd.hasOption("open-dir")) commandArgs.put("enableOpenDir", cmd.getOptionValue("open-dir"));
+        if (cmd.hasOption("date-type")) commandArgs.put("dateType", cmd.getOptionValue("date-type"));
+        
+        // 包配置
+        if (cmd.hasOption("entity-package")) commandArgs.put("entityPackage", cmd.getOptionValue("entity-package"));
+        if (cmd.hasOption("service-package")) commandArgs.put("servicePackage", cmd.getOptionValue("service-package"));
+        if (cmd.hasOption("service-impl-package")) commandArgs.put("serviceImplPackage", cmd.getOptionValue("service-impl-package"));
+        if (cmd.hasOption("mapper-package")) commandArgs.put("mapperPackage", cmd.getOptionValue("mapper-package"));
+        if (cmd.hasOption("controller-package")) commandArgs.put("controllerPackage", cmd.getOptionValue("controller-package"));
+        
+        // 策略配置
+        if (cmd.hasOption("file-override")) commandArgs.put("enableFileOverride", cmd.getOptionValue("file-override"));
+        if (cmd.hasOption("lombok")) commandArgs.put("enableLombok", cmd.getOptionValue("lombok"));
+        if (cmd.hasOption("base-result-map")) commandArgs.put("enableBaseResultMap", cmd.getOptionValue("base-result-map"));
+        if (cmd.hasOption("base-column-list")) commandArgs.put("enableBaseColumnList", cmd.getOptionValue("base-column-list"));
+        
+        // 模块控制
         if (cmd.hasOption("service")) commandArgs.put("enableService", cmd.getOptionValue("service"));
         if (cmd.hasOption("service-impl")) commandArgs.put("enableServiceImpl", cmd.getOptionValue("service-impl"));
         if (cmd.hasOption("controller")) commandArgs.put("enableController", cmd.getOptionValue("controller"));
@@ -296,34 +394,68 @@ public class DorisCodeGenerator {
                 .globalConfig(builder -> {
                     builder.author(config.getAuthor())
                            .outputDir(config.getOutputDir())
-                           .disableOpenDir()
-                           .commentDate("yyyy-MM-dd")
-                           .dateType(DateType.ONLY_DATE);
+                           .commentDate(config.getCommentDatePattern())
+                           .dateType(config.getDateType());
+                    if (!config.isEnableOpenDir()) {
+                        builder.disableOpenDir();
+                    }
                 })
                 .packageConfig(builder -> {
                     builder.parent(config.getParentPackage())
-                           .entity("entity")
-                           .service("service")
-                           .serviceImpl("service.impl")
-                           .mapper("mapper")
-                           .controller("controller");
+                           .entity(config.getEntityPackage())
+                           .service(config.getServicePackage())
+                           .serviceImpl(config.getServiceImplPackage())
+                           .mapper(config.getMapperPackage())
+                           .controller(config.getControllerPackage());
                 })
                 .strategyConfig(builder -> {
                     builder.addTablePrefix(config.getTablePrefix())
-                           .addInclude(config.getIncludeTables())
-                           .entityBuilder()
-                               .enableFileOverride()
-                               .enableLombok()
-                           .mapperBuilder()
-                               .enableFileOverride()
-                               .superClass(BaseMapper.class)
-                               .enableBaseResultMap()
-                               .enableBaseColumnList()
-                            .serviceBuilder()
-                                .enableFileOverride()
-                                .disableService()
-                                .disableServiceImpl()
-                            ;
+                           .addInclude(config.getIncludeTables());
+                    
+                    // 实体类策略配置
+                    builder.entityBuilder();
+                    
+                    if (config.isEnableFileOverride()) {
+                        builder.entityBuilder().enableFileOverride();
+                    }
+                    if (config.isEnableLombok()) {
+                        builder.entityBuilder().enableLombok();
+                    }
+                    
+                    // 映射器策略配置
+                    builder.mapperBuilder()
+                           .superClass(BaseMapper.class);
+                    
+                    if (config.isEnableFileOverride()) {
+                        builder.mapperBuilder().enableFileOverride();
+                    }
+                    if (config.isEnableBaseResultMap()) {
+                        builder.mapperBuilder().enableBaseResultMap();
+                    }
+                    if (config.isEnableBaseColumnList()) {
+                        builder.mapperBuilder().enableBaseColumnList();
+                    }
+                    
+                    // 服务层策略配置
+                    builder.serviceBuilder();
+                    
+                    if (config.isEnableFileOverride()) {
+                        builder.serviceBuilder().enableFileOverride();
+                    }
+                    if (!config.isEnableService()) {
+                        builder.serviceBuilder().disableService();
+                    }
+                    if (!config.isEnableServiceImpl()) {
+                        builder.serviceBuilder().disableServiceImpl();
+                    }
+                    
+                    // 控制器策略配置
+                    if (config.isEnableController()) {
+                        builder.controllerBuilder();
+                        if (config.isEnableFileOverride()) {
+                            builder.controllerBuilder().enableFileOverride();
+                        }
+                    }
                 })
                 // 在MyBatis-Plus 3.5+版本中，使用strategyConfig的entityBuilder、mapperBuilder等来配置生成策略
                 // 模板配置已经集成到这些构建器中
@@ -349,8 +481,22 @@ public class DorisCodeGenerator {
         private String password = "ctsi@Passw0rd";
         private String author = "MybatisPlusGenerator";
         private String outputDir = System.getProperty("user.dir") + "/src/main/java";
+        private boolean enableOpenDir = false;
+        private String commentDatePattern = "yyyy-MM-dd";
+        private DateType dateType = DateType.ONLY_DATE;
+        
         private String parentPackage = "com.ct.w.datastudio.autogen";
-        private String tablePrefix = "app_pubm_sjgf_";
+        private String entityPackage = "entity";
+        private String servicePackage = "service";
+        private String serviceImplPackage = "service.impl";
+        private String mapperPackage = "mapper";
+        private String controllerPackage = "controller";
+        
+        private String tablePrefix = "";
+        private boolean enableFileOverride = true;
+        private boolean enableLombok = true;
+        private boolean enableBaseResultMap = true;
+        private boolean enableBaseColumnList = true;
         private boolean enableService = false;
         private boolean enableServiceImpl = false;
         private boolean enableController = false;
@@ -365,8 +511,28 @@ public class DorisCodeGenerator {
             password = props.getProperty("password", password);
             author = props.getProperty("author", author);
             outputDir = props.getProperty("outputDir", outputDir);
+            enableOpenDir = Boolean.parseBoolean(props.getProperty("enableOpenDir", String.valueOf(enableOpenDir)));
+            commentDatePattern = props.getProperty("commentDatePattern", commentDatePattern);
+            if (props.getProperty("dateType") != null) {
+                try {
+                    dateType = DateType.valueOf(props.getProperty("dateType"));
+                } catch (IllegalArgumentException e) {
+                    System.out.println("无效的dateType值: " + props.getProperty("dateType") + ", 使用默认值: " + dateType);
+                }
+            }
+            
             parentPackage = props.getProperty("parentPackage", parentPackage);
+            entityPackage = props.getProperty("entityPackage", entityPackage);
+            servicePackage = props.getProperty("servicePackage", servicePackage);
+            serviceImplPackage = props.getProperty("serviceImplPackage", serviceImplPackage);
+            mapperPackage = props.getProperty("mapperPackage", mapperPackage);
+            controllerPackage = props.getProperty("controllerPackage", controllerPackage);
+            
             tablePrefix = props.getProperty("tablePrefix", tablePrefix);
+            enableFileOverride = Boolean.parseBoolean(props.getProperty("enableFileOverride", String.valueOf(enableFileOverride)));
+            enableLombok = Boolean.parseBoolean(props.getProperty("enableLombok", String.valueOf(enableLombok)));
+            enableBaseResultMap = Boolean.parseBoolean(props.getProperty("enableBaseResultMap", String.valueOf(enableBaseResultMap)));
+            enableBaseColumnList = Boolean.parseBoolean(props.getProperty("enableBaseColumnList", String.valueOf(enableBaseColumnList)));
             enableService = Boolean.parseBoolean(props.getProperty("enableService", "false"));
             enableServiceImpl = Boolean.parseBoolean(props.getProperty("enableServiceImpl", "false"));
             enableController = Boolean.parseBoolean(props.getProperty("enableController", "false"));
@@ -388,6 +554,29 @@ public class DorisCodeGenerator {
             if (args.containsKey("enableService")) enableService = Boolean.parseBoolean(args.get("enableService"));
             if (args.containsKey("enableServiceImpl")) enableServiceImpl = Boolean.parseBoolean(args.get("enableServiceImpl"));
             if (args.containsKey("enableController")) enableController = Boolean.parseBoolean(args.get("enableController"));
+
+            // 全局配置
+            if (args.containsKey("enableOpenDir")) enableOpenDir = Boolean.parseBoolean(args.get("enableOpenDir"));
+            if (args.containsKey("dateType")) {
+                try {
+                    dateType = DateType.valueOf(args.get("dateType"));
+                } catch (IllegalArgumentException e) {
+                    System.out.println("无效的dateType值: " + args.get("dateType") + ", 使用默认值: " + dateType);
+                }
+            }
+
+            // 包配置
+            if (args.containsKey("entityPackage")) entityPackage = args.get("entityPackage");
+            if (args.containsKey("servicePackage")) servicePackage = args.get("servicePackage");
+            if (args.containsKey("serviceImplPackage")) serviceImplPackage = args.get("serviceImplPackage");
+            if (args.containsKey("mapperPackage")) mapperPackage = args.get("mapperPackage");
+            if (args.containsKey("controllerPackage")) controllerPackage = args.get("controllerPackage");
+
+            // 策略配置
+            if (args.containsKey("enableFileOverride")) enableFileOverride = Boolean.parseBoolean(args.get("enableFileOverride"));
+            if (args.containsKey("enableLombok")) enableLombok = Boolean.parseBoolean(args.get("enableLombok"));
+            if (args.containsKey("enableBaseResultMap")) enableBaseResultMap = Boolean.parseBoolean(args.get("enableBaseResultMap"));
+            if (args.containsKey("enableBaseColumnList")) enableBaseColumnList = Boolean.parseBoolean(args.get("enableBaseColumnList"));
 
             if (args.containsKey("includeTables")) {
                 String tables = args.get("includeTables");
