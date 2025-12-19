@@ -312,25 +312,21 @@ public class DorisCodeGenerator {
                     builder.addTablePrefix(config.getTablePrefix())
                            .addInclude(config.getIncludeTables())
                            .entityBuilder()
-                               .fileOverride()
+                               .enableFileOverride()
                                .enableLombok()
                            .mapperBuilder()
-                               .fileOverride()
+                               .enableFileOverride()
                                .superClass(BaseMapper.class)
                                .enableBaseResultMap()
-                               .enableBaseColumnList();
+                               .enableBaseColumnList()
+                            .serviceBuilder()
+                                .enableFileOverride()
+                                .disableService()
+                                .disableServiceImpl()
+                            ;
                 })
-                .templateConfig(builder -> {
-                    if (!config.isEnableService()) {
-                        builder.disable(TemplateType.SERVICE);
-                    }
-                    if (!config.isEnableServiceImpl()) {
-                        builder.disable(TemplateType.SERVICEIMPL);
-                    }
-                    if (!config.isEnableController()) {
-                        builder.disable(TemplateType.CONTROLLER);
-                    }
-                })
+                // 在MyBatis-Plus 3.5+版本中，使用strategyConfig的entityBuilder、mapperBuilder等来配置生成策略
+                // 模板配置已经集成到这些构建器中
                 .execute();
 
             System.out.println("代码生成完成!");
